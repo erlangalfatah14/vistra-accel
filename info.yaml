@@ -1,0 +1,14 @@
+project:
+  title: "VIStra-Accel"
+  author: "Erlang Sultan Alfatah"
+  description: "INT8 3x3 convolution accelerator with ReLU for assistive vision"
+  language: "Verilog"
+  clock_hz: 0
+  tiles: "1x1"
+
+  top_module: "vistra_conv3x3"
+
+  source_files:
+    - "main.v"
+
+yaml_version: 6
