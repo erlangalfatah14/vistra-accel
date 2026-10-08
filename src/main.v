@@ -1,6 +1,6 @@
 // VIStra-Accel
 // Pipelined INT8 3x3 Convolution Accelerator
-// 9 parallel multipliers + adder tree + bias + ReLU
+// Version without '<' character for sandbox compatibility
 
 module vistra_conv3x3 (
 
@@ -8,7 +8,7 @@ module vistra_conv3x3 (
     input wire rst_n,
     input wire valid_in,
 
-    // 9 Pixels
+    // Pixels
     input signed [7:0] p0,
     input signed [7:0] p1,
     input signed [7:0] p2,
@@ -19,7 +19,7 @@ module vistra_conv3x3 (
     input signed [7:0] p7,
     input signed [7:0] p8,
 
-    // 9 Weights
+    // Weights
     input signed [7:0] w0,
     input signed [7:0] w1,
     input signed [7:0] w2,
@@ -37,11 +37,7 @@ module vistra_conv3x3 (
     output reg valid_out
 );
 
-    // ========================================
-    // PIPELINE STAGE 1
-    // 9 Parallel Multiplications
-    // ========================================
-
+    // Stage 1
     reg signed [31:0] m0_r;
     reg signed [31:0] m1_r;
     reg signed [31:0] m2_r;
@@ -51,169 +47,141 @@ module vistra_conv3x3 (
     reg signed [31:0] m6_r;
     reg signed [31:0] m7_r;
     reg signed [31:0] m8_r;
-
     reg signed [31:0] bias_s1;
-
     reg valid_s1;
 
-    // ========================================
-    // PIPELINE STAGE 2
-    // First adder level
-    // ========================================
-
+    // Stage 2
     reg signed [31:0] sum01_r;
     reg signed [31:0] sum23_r;
     reg signed [31:0] sum45_r;
     reg signed [31:0] sum67_r;
-
     reg signed [31:0] m8_s2;
     reg signed [31:0] bias_s2;
-
     reg valid_s2;
 
-    // ========================================
-    // PIPELINE STAGE 3
-    // Second adder level
-    // ========================================
-
+    // Stage 3
     reg signed [31:0] sum0123_r;
     reg signed [31:0] sum4567_r;
     reg signed [31:0] tail_r;
-
     reg valid_s3;
 
-    // ========================================
-    // PIPELINE STAGE 4
-    // Combine first 8 MAC results
-    // ========================================
-
+    // Stage 4
     reg signed [31:0] sum0to7_r;
     reg signed [31:0] tail_s4;
-
     reg valid_s4;
 
-    // Final combinational result before register
-    wire signed [31:0] final_sum;
-
-    assign final_sum = sum0to7_r + tail_s4;
-
-    // ========================================
-    // PIPELINE PROCESS
-    // ========================================
 
     always @(posedge clk or negedge rst_n) begin
 
         if (!rst_n) begin
 
-            m0_r &lt;= 0;
-            m1_r &lt;= 0;
-            m2_r &lt;= 0;
-            m3_r &lt;= 0;
-            m4_r &lt;= 0;
-            m5_r &lt;= 0;
-            m6_r &lt;= 0;
-            m7_r &lt;= 0;
-            m8_r &lt;= 0;
+            m0_r = 0;
+            m1_r = 0;
+            m2_r = 0;
+            m3_r = 0;
+            m4_r = 0;
+            m5_r = 0;
+            m6_r = 0;
+            m7_r = 0;
+            m8_r = 0;
 
-            bias_s1 &lt;= 0;
+            bias_s1 = 0;
 
-            sum01_r &lt;= 0;
-            sum23_r &lt;= 0;
-            sum45_r &lt;= 0;
-            sum67_r &lt;= 0;
+            sum01_r = 0;
+            sum23_r = 0;
+            sum45_r = 0;
+            sum67_r = 0;
 
-            m8_s2 &lt;= 0;
-            bias_s2 &lt;= 0;
+            m8_s2 = 0;
+            bias_s2 = 0;
 
-            sum0123_r &lt;= 0;
-            sum4567_r &lt;= 0;
-            tail_r &lt;= 0;
+            sum0123_r = 0;
+            sum4567_r = 0;
+            tail_r = 0;
 
-            sum0to7_r &lt;= 0;
-            tail_s4 &lt;= 0;
+            sum0to7_r = 0;
+            tail_s4 = 0;
 
-            conv_result &lt;= 0;
-            relu_result &lt;= 0;
+            conv_result = 0;
+            relu_result = 0;
 
-            valid_s1 &lt;= 0;
-            valid_s2 &lt;= 0;
-            valid_s3 &lt;= 0;
-            valid_s4 &lt;= 0;
-            valid_out &lt;= 0;
+            valid_s1 = 0;
+            valid_s2 = 0;
+            valid_s3 = 0;
+            valid_s4 = 0;
+            valid_out = 0;
 
         end else begin
 
-            // =================================
-            // STAGE 1
-            // =================================
-
-            m0_r &lt;= p0 * w0;
-            m1_r &lt;= p1 * w1;
-            m2_r &lt;= p2 * w2;
-            m3_r &lt;= p3 * w3;
-            m4_r &lt;= p4 * w4;
-            m5_r &lt;= p5 * w5;
-            m6_r &lt;= p6 * w6;
-            m7_r &lt;= p7 * w7;
-            m8_r &lt;= p8 * w8;
-
-            bias_s1 &lt;= bias;
-
-            valid_s1 &lt;= valid_in;
-
-
-            // =================================
-            // STAGE 2
-            // =================================
-
-            sum01_r &lt;= m0_r + m1_r;
-            sum23_r &lt;= m2_r + m3_r;
-            sum45_r &lt;= m4_r + m5_r;
-            sum67_r &lt;= m6_r + m7_r;
-
-            m8_s2 &lt;= m8_r;
-            bias_s2 &lt;= bias_s1;
-
-            valid_s2 &lt;= valid_s1;
-
-
-            // =================================
-            // STAGE 3
-            // =================================
-
-            sum0123_r &lt;= sum01_r + sum23_r;
-            sum4567_r &lt;= sum45_r + sum67_r;
-
-            // pixel 8 result + bias
-            tail_r &lt;= m8_s2 + bias_s2;
-
-            valid_s3 &lt;= valid_s2;
-
-
-            // =================================
-            // STAGE 4
-            // =================================
-
-            sum0to7_r &lt;= sum0123_r + sum4567_r;
-
-            tail_s4 &lt;= tail_r;
-
-            valid_s4 &lt;= valid_s3;
-
-
-            // =================================
+            // =====================================
             // STAGE 5
-            // Final result + ReLU
-            // =================================
+            // Must be first because "=" is used
+            // =====================================
 
-            conv_result &lt;= final_sum;
+            conv_result = sum0to7_r + tail_s4;
 
-            if (final_sum[31])
-                relu_result &lt;= 32'sd0;
+            if (conv_result[31])
+                relu_result = 32'sd0;
             else
-                relu_result &lt;= final_sum;
+                relu_result = conv_result;
 
-            valid_out &lt;= valid_s4;
+            valid_out = valid_s4;
+
+
+            // =====================================
+            // STAGE 4
+            // =====================================
+
+            sum0to7_r = sum0123_r + sum4567_r;
+            tail_s4 = tail_r;
+
+            valid_s4 = valid_s3;
+
+
+            // =====================================
+            // STAGE 3
+            // =====================================
+
+            sum0123_r = sum01_r + sum23_r;
+            sum4567_r = sum45_r + sum67_r;
+
+            tail_r = m8_s2 + bias_s2;
+
+            valid_s3 = valid_s2;
+
+
+            // =====================================
+            // STAGE 2
+            // =====================================
+
+            sum01_r = m0_r + m1_r;
+            sum23_r = m2_r + m3_r;
+            sum45_r = m4_r + m5_r;
+            sum67_r = m6_r + m7_r;
+
+            m8_s2 = m8_r;
+            bias_s2 = bias_s1;
+
+            valid_s2 = valid_s1;
+
+
+            // =====================================
+            // STAGE 1
+            // =====================================
+
+            m0_r = p0 * w0;
+            m1_r = p1 * w1;
+            m2_r = p2 * w2;
+            m3_r = p3 * w3;
+            m4_r = p4 * w4;
+            m5_r = p5 * w5;
+            m6_r = p6 * w6;
+            m7_r = p7 * w7;
+            m8_r = p8 * w8;
+
+            bias_s1 = bias;
+
+            valid_s1 = valid_in;
 
         end
 
