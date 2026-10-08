@@ -7,5 +7,6 @@ set ::env(CORE_AREA) "5 5 195 195"
 
 set ::env(RUN_LINTER) 0
 
+# Clock configuration
 set ::env(CLOCK_PORT) "clk"
 set ::env(CLOCK_PERIOD) "10"
